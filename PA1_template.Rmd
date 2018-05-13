@@ -1,0 +1,117 @@
+Reproducible Research: Course Project 1
+=======================================
+
+## Loading and preprocessing the data
+
+1. Load the data
+
+``` {r, echo = TRUE}
+activity <- read.csv("activity.csv")
+```
+
+2. Process/transform the data
+
+``` {r, echo = TRUE}
+library(lubridate)
+
+activity$date <- ymd(activity$date)
+```
+
+
+## What is mean total number of steps taken per day?
+
+1. Calculate the total number of steps taken per day
+
+``` {r, echo = TRUE}
+stepsEachDay <- tapply(activity$steps, activity$date, sum , na.rm = TRUE)
+```
+
+2. Make a histogram of the total number of steps taken each day
+
+``` {r, echo = TRUE}
+hist(stepsEachDay, xlab = "Steps taken per day", ylab = "frequency", col = "green", breaks = 25, main = "Total Number of steps taken each day")
+```
+
+3. Mean and Median of the total number of steps taken per day
+
+``` {r, echo = TRUE}
+mean(stepsEachDay)
+median(stepsEachDay)
+```
+
+
+
+## What is the average daily activity pattern?
+
+1. time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+``` {r, echo = TRUE}
+library(ggplot2)
+library(dplyr)
+
+activityInterval <- group_by(activity, interval)
+AvgSteps <- summarise(activityInterval, average = mean(steps, na.rm = TRUE))
+
+qplot(AvgSteps$interval,AvgSteps$average, geom = "line", xlab = "Interval", ylab = "average number of steps")
+```
+
+2. Which 5-minute interval contains the maximum number of steps?
+
+``` {r, echo = TRUE}
+AvgSteps[which.max(AvgSteps$average),1]
+```
+
+
+
+## Imputing missing values
+
+1.  total number of missing values in the dataset
+
+``` {r, echo = TRUE}
+NAValues <- nrow(activity[is.na(activity$steps),])
+```
+
+2. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+``` {r, echo = TRUE}
+library(Hmisc)
+activityImputed <- activity
+activityImputed$steps <- impute(activity$steps, fun=mean)
+```
+
+3. Histogram of the total number of steps taken each day after imputation
+
+``` {r, echo = TRUE}
+stepsImputed <- tapply(activityImputed$steps, activityImputed$date, sum)
+hist(stepsImputed, xlab = "Steps taken per day", ylab = "frequency", col = "green", breaks = 25, main = "Total Number of steps taken each day")
+```
+
+4. Mean and Median total number of steps taken per day after imputation
+
+``` {r, echo = TRUE}
+mean(stepsImputed)
+median(stepsImputed)
+```
+
+It is obvious that final results were remarakabely changed after imputation
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend"
+
+``` {r, echo = TRUE}
+activityImputed <- mutate(activityImputed, day = factor(weekdays(activityImputed$date)))
+activityImputed <- mutate(activityImputed, weekday = factor((day == "Saturday" | day == "Sunday" ), labels = c("Weekday", "Weekend")))
+```
+
+
+2. panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+``` {r, echo = TRUE}
+activityImputedInterval <- group_by(activityImputed, interval, weekday)
+AvgImputedSteps <- summarise(activityImputedInterval, average = mean(steps))
+qplot(interval,average, data = AvgImputedSteps, geom = "line", xlab = "Interval", ylab = "average number of steps", facets = .~ weekday)
+```
+
+
+
